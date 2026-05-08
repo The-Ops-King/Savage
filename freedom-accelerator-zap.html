@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Freedom Accelerator — Rebuilt Zap</title>
+<style>
+  :root {
+    --bg: #4a0d0d;
+    --bg-2: #2c0707;
+    --card: #fbf6ee;
+    --card-edge: #e8dcc4;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #c9b89a;
+    --whop: #ff6b3d;
+    --filter: #ff8b3d;
+    --code: #6b3df0;
+    --slack: #4a154b;
+    --formatter: #ff9c5b;
+    --airtable: #ffb547;
+    --subzap: #6b46f0;
+    --paths: #2563eb;
+    --heartbeat: #f97316;
+    --email: #06b6d4;
+    --pathA: #16a34a;
+    --pathB: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 24px 80px;
+  }
+  h1 {
+    color: #fff;
+    text-align: center;
+    margin: 8px 0 4px;
+    font-size: 28px;
+    letter-spacing: 0.3px;
+  }
+  .subtitle {
+    color: #f7d6c2;
+    text-align: center;
+    margin: 0 0 28px;
+    font-size: 14px;
+  }
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .node {
+    background: var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: 12px;
+    padding: 14px 16px;
+    width: 360px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    position: relative;
+  }
+  .node .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: #fff;
+    margin-bottom: 6px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .node .num {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .node .title {
+    font-weight: 600;
+    font-size: 15px;
+    margin: 2px 0 4px;
+  }
+  .node .meta {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .arrow {
+    width: 2px;
+    height: 22px;
+    background: var(--line);
+    margin: 0;
+  }
+  .arrow::after {
+    content: "";
+    display: block;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--line);
+    margin-left: -4px;
+    margin-top: 22px;
+  }
+
+  /* Branch */
+  .branch-wrap {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    width: 100%;
+    margin-top: 0;
+  }
+  .branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+    max-width: 420px;
+  }
+  .branch-label {
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .branch-A .branch-label { background: var(--pathA); }
+  .branch-B .branch-label { background: var(--pathB); }
+
+  .splitter {
+    position: relative;
+    width: 100%;
+    height: 30px;
+  }
+  .splitter::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 50%;
+    width: 2px; height: 14px;
+    background: var(--line);
+    transform: translateX(-50%);
+  }
+  .splitter::after {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 25%;
+    right: 25%;
+    height: 2px;
+    background: var(--line);
+  }
+  .splitter .down-left,
+  .splitter .down-right {
+    position: absolute;
+    top: 14px;
+    width: 2px;
+    height: 16px;
+    background: var(--line);
+  }
+  .splitter .down-left { left: calc(25% - 1px); }
+  .splitter .down-right { right: calc(25% - 1px); }
+
+  /* Badge colors */
+  .b-whop { background: var(--whop); }
+  .b-filter { background: var(--filter); }
+  .b-code { background: var(--code); }
+  .b-slack { background: var(--slack); }
+  .b-formatter { background: var(--formatter); }
+  .b-airtable { background: var(--airtable); color: #1a1a1a !important; }
+  .b-subzap { background: var(--subzap); }
+  .b-paths { background: var(--paths); }
+  .b-heartbeat { background: var(--heartbeat); }
+  .b-email { background: var(--email); }
+
+  /* Settings section */
+  .settings {
+    max-width: 980px;
+    margin: 60px auto 0;
+    color: #fbf6ee;
+  }
+  .settings h2 {
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 10px;
+    margin-top: 36px;
+  }
+  .settings h3 {
+    color: #ffd9c2;
+    margin-top: 22px;
+    margin-bottom: 6px;
+    font-size: 16px;
+  }
+  .settings .step {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .settings code, .settings pre {
+    background: #1a0606;
+    color: #fcd9c2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12.5px;
+  }
+  .settings pre {
+    padding: 12px;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+  .settings .field {
+    margin: 4px 0;
+    font-size: 13.5px;
+  }
+  .settings .field .k {
+    color: #ffd9c2;
+    font-weight: 600;
+  }
+  .settings .field .v {
+    color: #fff;
+  }
+  .settings .note {
+    background: rgba(255, 200, 100, 0.15);
+    border-left: 3px solid #ffb547;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: #fff3e6;
+    border-radius: 4px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 0 auto 28px;
+    max-width: 700px;
+  }
+  .legend span {
+    font-size: 11px;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Freedom Accelerator — Rebuilt Zap</h1>
+<p class="subtitle">Find before write. Idempotent. Single onboarding path. One Slack summary.</p>
+
+<div class="legend">
+  <span class="b-whop">WHOP</span>
+  <span class="b-filter">FILTER</span>
+  <span class="b-code">CODE</span>
+  <span class="b-airtable">AIRTABLE</span>
+  <span class="b-subzap">SUB-ZAP</span>
+  <span class="b-paths">PATHS</span>
+  <span class="b-heartbeat">HEARTBEAT</span>
+  <span class="b-email">EMAIL</span>
+  <span class="b-slack">SLACK</span>
+</div>
+
+<div class="container">
+  <div class="flow">
+
+    <div class="node">
+      <span class="badge b-whop">WHOP</span>
+      <div class="title"><span class="num">1.</span> Payment Succeeded</div>
+      <div class="meta">Trigger. No filtering here — we filter in step 2.</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="node">
+      <span class="badge b-filter">FILTER</span>
+      <div class="title"><span class="num">2.</span> Only Freedom Accelerator</div>
+      <div class="meta">Continue only if Product = Freedom Accelerator</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="node">
+      <span class="badge b-code">CODE · JS</span>
+      <div class="title"><span class="num">3.</span> Normalize Inputs</div>
+      <div class="meta">Picks first email, proper-cases name, formats date, builds txn key.<br>Outputs: firstName, lastName, email, txnKey, monthYear</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="node">
+      <span class="badge b-airtable">AIRTABLE</span>
+      <div class="title"><span class="num">4.</span> Find Payment by Txn ID</div>
+      <div class="meta">Idempotency guard — has this Whop transaction been processed?</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="node">
+      <span class="badge b-filter">FILTER</span>
+      <div class="title"><span class="num">5.</span> Stop if Duplicate</div>
+      <div class="meta">Continue only if step 4 returned no record.</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="node">
+      <span class="badge b-subzap">SUB-ZAP</span>
+      <div class="title"><span class="num">6.</span> Find Client (fuzzy)</div>
+      <div class="meta">Returns Airtable Client ID, or empty if not found.</div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="node">
+      <span class="badge b-paths">PATHS</span>
+      <div class="title"><span class="num">7.</span> Existing Client?</div>
+      <div class="meta">Splits on whether step 6 returned a Client ID.</div>
+    </div>
+
+    <div class="splitter">
+      <div class="down-left"></div>
+      <div class="down-right"></div>
+    </div>
+
+    <div class="branch-wrap">
+
+      <!-- PATH A -->
+      <div class="branch branch-A">
+        <div class="branch-label">PATH A — Existing Client</div>
+
+        <div class="node">
+          <span class="badge b-airtable">AIRTABLE</span>
+          <div class="title"><span class="num">A1.</span> Update Client</div>
+          <div class="meta">Stage = Won · append tags · set current product</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-airtable">AIRTABLE</span>
+          <div class="title"><span class="num">A2.</span> Create Payment</div>
+          <div class="meta">Linked to existing client. Stores Whop Txn ID.</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-airtable">AIRTABLE</span>
+          <div class="title"><span class="num">A3.</span> Find Prior Freedom Payments</div>
+          <div class="meta">Any earlier Freedom payment for this client?</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-paths">PATHS</span>
+          <div class="title"><span class="num">A4.</span> First Freedom or Rebill?</div>
+          <div class="meta">If A3 empty → first-time onboarding. Else → rebill.</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-heartbeat">HEARTBEAT</span>
+          <div class="title"><span class="num">A5.</span> Invite to Heartbeat</div>
+          <div class="meta">Only on first Freedom path.</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-email">EMAIL</span>
+          <div class="title"><span class="num">A6.</span> Welcome Email</div>
+          <div class="meta">Only on first Freedom path.</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-slack">SLACK</span>
+          <div class="title"><span class="num">A7.</span> Slack Summary</div>
+          <div class="meta">"NEW Freedom upgrade from low-ticket" / "Freedom rebill"</div>
+        </div>
+      </div>
+
+      <!-- PATH B -->
+      <div class="branch branch-B">
+        <div class="branch-label">PATH B — New Client</div>
+
+        <div class="node">
+          <span class="badge b-airtable">AIRTABLE</span>
+          <div class="title"><span class="num">B1.</span> Create Client</div>
+          <div class="meta">Stage = Won · tags · current product</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-airtable">AIRTABLE</span>
+          <div class="title"><span class="num">B2.</span> Create Payment</div>
+          <div class="meta">Linked to client from B1. Stores Whop Txn ID.</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-heartbeat">HEARTBEAT</span>
+          <div class="title"><span class="num">B3.</span> Invite to Heartbeat</div>
+          <div class="meta">Always — they're brand new.</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-email">EMAIL</span>
+          <div class="title"><span class="num">B4.</span> Welcome Email</div>
+          <div class="meta">Always — first interaction.</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node">
+          <span class="badge b-slack">SLACK</span>
+          <div class="title"><span class="num">B5.</span> Slack Summary</div>
+          <div class="meta">"NEW Freedom client"</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ====================== SETTINGS ====================== -->
+<div class="settings">
+
+  <h2>Node Settings (copy these into Zapier)</h2>
+
+  <div class="note">
+    <strong>Convergence note:</strong> Zapier Paths don't reconverge. That's why you see Heartbeat/Email/Slack duplicated in Path A and Path B — unavoidable in vanilla Zapier. If you want them defined in one place, wrap them in a "Process Customer" sub-zap and call it from both paths.
+  </div>
+
+  <h3>1. Whop — Payment Succeeded (trigger)</h3>
+  <div class="step">
+    <div class="field"><span class="k">App / Event:</span> <span class="v">Whop · Payment Succeeded</span></div>
+    <div class="field"><span class="k">Account:</span> <span class="v">[your Whop account]</span></div>
+    <div class="field"><span class="k">Product filter:</span> <span class="v">leave blank — we filter in step 2</span></div>
+  </div>
+
+  <h3>2. Filter — Only Freedom Accelerator</h3>
+  <div class="step">
+    <div class="field"><span class="k">Field:</span> <span class="v">{{1.product_name}} (or plan_id)</span></div>
+    <div class="field"><span class="k">Condition:</span> <span class="v">(Text) Exactly matches → Freedom Accelerator</span></div>
+  </div>
+
+  <h3>3. Code by Zapier — Normalize Inputs (JavaScript)</h3>
+  <div class="step">
+    <div class="field"><span class="k">Input Data:</span></div>
+    <div class="field"><span class="v">rawName = {{1.user_name}}</span></div>
+    <div class="field"><span class="v">rawEmails = {{1.email}}</span></div>
+    <div class="field"><span class="v">txnId = {{1.transaction_id}}</span></div>
+    <div class="field"><span class="v">paymentDate = {{1.created_at}}</span></div>
+    <pre>const titleCase = s => s.toLowerCase().replace(/\b\w/g, c =&gt; c.toUpperCase());
+const raw = (inputData.rawName || '').trim();
+const parts = raw.split(/\s+/);
+const firstName = parts[0] ? titleCase(parts[0]) : '';
+const lastName  = parts.slice(1).length ? titleCase(parts.slice(1).join(' ')) : '';
+
+// Whop sometimes returns multiple emails comma/semicolon separated
+const email = (inputData.rawEmails || '')
+  .split(/[,;\s]+/)[0]
+  .toLowerCase()
+  .trim();
+
+const txnKey = `freedom_${inputData.txnId}`;
+
+const d = new Date(inputData.paymentDate);
+const monthYear = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+output = { firstName, lastName, email, txnKey, monthYear };</pre>
+  </div>
+
+  <h3>4. Airtable — Find Records (Payments) — idempotency guard</h3>
+  <div class="step">
+    <div class="field"><span class="k">Base:</span> <span class="v">Sales Savage</span></div>
+    <div class="field"><span class="k">Table:</span> <span class="v">Payments</span></div>
+    <div class="field"><span class="k">Search field:</span> <span class="v">Whop Transaction ID</span></div>
+    <div class="field"><span class="k">Search value:</span> <span class="v">{{3.txnKey}}</span></div>
+    <div class="field"><span class="k">Limit:</span> <span class="v">1</span></div>
+  </div>
+
+  <h3>5. Filter — Stop if Duplicate</h3>
+  <div class="step">
+    <div class="field"><span class="k">Condition:</span> <span class="v">{{4.id}} Does Not Exist</span></div>
+  </div>
+
+  <h3>6. Sub-Zap — Find Client (fuzzy)</h3>
+  <div class="step">
+    <div class="field"><span class="k">Inputs:</span> <span class="v">email, firstName, lastName</span></div>
+    <div class="field"><span class="k">Returns:</span> <span class="v">clientId (Airtable record ID, empty string if not found)</span></div>
+    <div class="note">This is the same sub-zap you already have. Just make sure it returns an empty string (not null) when no match — Zapier Paths handle that more reliably.</div>
+  </div>
+
+  <h3>7. Paths — Existing Client?</h3>
+  <div class="step">
+    <div class="field"><span class="k">Path A condition:</span> <span class="v">{{6.clientId}} Exists</span></div>
+    <div class="field"><span class="k">Path B condition:</span> <span class="v">{{6.clientId}} Does Not Exist</span></div>
+  </div>
+
+  <h2>Path A — Existing Client</h2>
+
+  <h3>A1. Airtable — Update Client</h3>
+  <div class="step">
+    <div class="field"><span class="k">Table:</span> <span class="v">Clients (or Leads if same table)</span></div>
+    <div class="field"><span class="k">Record ID:</span> <span class="v">{{6.clientId}}</span></div>
+    <div class="field"><span class="k">Prospect Stage:</span> <span class="v">Won - New Client</span></div>
+    <div class="field"><span class="k">Tags:</span> <span class="v">Freedom Accelerator, SFA  (set to "append" not "overwrite")</span></div>
+    <div class="field"><span class="k">Current Product:</span> <span class="v">Freedom Accelerator</span></div>
+    <div class="field"><span class="k">Last Payment Month:</span> <span class="v">{{3.monthYear}}</span></div>
+  </div>
+
+  <h3>A2. Airtable — Create Payment</h3>
+  <div class="step">
+    <div class="field"><span class="k">Table:</span> <span class="v">Payments</span></div>
+    <div class="field"><span class="k">Whop Transaction ID:</span> <span class="v">{{3.txnKey}}</span></div>
+    <div class="field"><span class="k">Client (link):</span> <span class="v">{{6.clientId}}</span></div>
+    <div class="field"><span class="k">Product:</span> <span class="v">Freedom Accelerator</span></div>
+    <div class="field"><span class="k">Amount:</span> <span class="v">{{1.amount}}</span></div>
+    <div class="field"><span class="k">Payment Month:</span> <span class="v">{{3.monthYear}}</span></div>
+  </div>
+
+  <h3>A3. Airtable — Find Prior Freedom Payments</h3>
+  <div class="step">
+    <div class="field"><span class="k">Table:</span> <span class="v">Payments</span></div>
+    <div class="field"><span class="k">Search formula:</span></div>
+    <pre>AND(
+  {Client} = "{{6.clientId}}",
+  {Product} = "Freedom Accelerator",
+  {Whop Transaction ID} != "{{3.txnKey}}"
+)</pre>
+    <div class="field"><span class="k">Limit:</span> <span class="v">1</span></div>
+    <div class="note">If this returns a record, this person has bought Freedom before — it's a rebill. If empty, this is their first Freedom purchase (likely upgrading from low-ticket).</div>
+  </div>
+
+  <h3>A4. Paths — First Freedom vs Rebill</h3>
+  <div class="step">
+    <div class="field"><span class="k">Sub-path A-i (first Freedom):</span> <span class="v">{{A3.id}} Does Not Exist → run A5, A6, A7-new</span></div>
+    <div class="field"><span class="k">Sub-path A-ii (rebill):</span> <span class="v">{{A3.id}} Exists → run only A7-rebill</span></div>
+  </div>
+
+  <h3>A5. Heartbeat — Invite User (first Freedom only)</h3>
+  <div class="step">
+    <div class="field"><span class="k">Email:</span> <span class="v">{{3.email}}</span></div>
+    <div class="field"><span class="k">First Name:</span> <span class="v">{{3.firstName}}</span></div>
+    <div class="field"><span class="k">Last Name:</span> <span class="v">{{3.lastName}}</span></div>
+    <div class="field"><span class="k">Group / Space:</span> <span class="v">Freedom Accelerator</span></div>
+  </div>
+
+  <h3>A6. Email by Zapier — Welcome (first Freedom only)</h3>
+  <div class="step">
+    <div class="field"><span class="k">To:</span> <span class="v">{{3.email}}</span></div>
+    <div class="field"><span class="k">From:</span> <span class="v">[your sender]</span></div>
+    <div class="field"><span class="k">Subject:</span> <span class="v">Welcome to Freedom Accelerator</span></div>
+    <div class="field"><span class="k">Body:</span> <span class="v">[your welcome template]</span></div>
+  </div>
+
+  <h3>A7. Slack — Summary</h3>
+  <div class="step">
+    <div class="field"><span class="k">Channel:</span> <span class="v">#savage-sales (or wherever)</span></div>
+    <div class="field"><span class="k">First-Freedom message:</span> <span class="v">🎉 NEW Freedom (upgraded from low-ticket): {{3.firstName}} {{3.lastName}} — {{3.email}}</span></div>
+    <div class="field"><span class="k">Rebill message:</span> <span class="v">🔁 Freedom rebill: {{3.firstName}} {{3.lastName}} — {{3.email}}</span></div>
+  </div>
+
+  <h2>Path B — New Client</h2>
+
+  <h3>B1. Airtable — Create Client</h3>
+  <div class="step">
+    <div class="field"><span class="k">Table:</span> <span class="v">Clients</span></div>
+    <div class="field"><span class="k">First Name:</span> <span class="v">{{3.firstName}}</span></div>
+    <div class="field"><span class="k">Last Name:</span> <span class="v">{{3.lastName}}</span></div>
+    <div class="field"><span class="k">Email:</span> <span class="v">{{3.email}}</span></div>
+    <div class="field"><span class="k">Prospect Stage:</span> <span class="v">Won - New Client</span></div>
+    <div class="field"><span class="k">Tags:</span> <span class="v">Freedom Accelerator, SFA</span></div>
+    <div class="field"><span class="k">Current Product:</span> <span class="v">Freedom Accelerator</span></div>
+    <div class="field"><span class="k">Source:</span> <span class="v">Whop</span></div>
+  </div>
+
+  <h3>B2. Airtable — Create Payment</h3>
+  <div class="step">
+    <div class="field"><span class="k">Table:</span> <span class="v">Payments</span></div>
+    <div class="field"><span class="k">Whop Transaction ID:</span> <span class="v">{{3.txnKey}}</span></div>
+    <div class="field"><span class="k">Client (link):</span> <span class="v">{{B1.id}}</span></div>
+    <div class="field"><span class="k">Product:</span> <span class="v">Freedom Accelerator</span></div>
+    <div class="field"><span class="k">Amount:</span> <span class="v">{{1.amount}}</span></div>
+    <div class="field"><span class="k">Payment Month:</span> <span class="v">{{3.monthYear}}</span></div>
+  </div>
+
+  <h3>B3. Heartbeat — Invite User</h3>
+  <div class="step">
+    <div class="field"><span class="k">Email:</span> <span class="v">{{3.email}}</span></div>
+    <div class="field"><span class="k">First Name:</span> <span class="v">{{3.firstName}}</span></div>
+    <div class="field"><span class="k">Last Name:</span> <span class="v">{{3.lastName}}</span></div>
+    <div class="field"><span class="k">Group / Space:</span> <span class="v">Freedom Accelerator</span></div>
+  </div>
+
+  <h3>B4. Email by Zapier — Welcome</h3>
+  <div class="step">
+    <div class="field"><span class="k">To:</span> <span class="v">{{3.email}}</span></div>
+    <div class="field"><span class="k">From:</span> <span class="v">[your sender]</span></div>
+    <div class="field"><span class="k">Subject:</span> <span class="v">Welcome to Freedom Accelerator</span></div>
+    <div class="field"><span class="k">Body:</span> <span class="v">[your welcome template]</span></div>
+  </div>
+
+  <h3>B5. Slack — Summary</h3>
+  <div class="step">
+    <div class="field"><span class="k">Channel:</span> <span class="v">#savage-sales</span></div>
+    <div class="field"><span class="k">Message:</span> <span class="v">🎉 NEW Freedom client: {{3.firstName}} {{3.lastName}} — {{3.email}}</span></div>
+  </div>
+
+  <h2>Required Airtable schema (minimum)</h2>
+  <div class="step">
+    <div class="field"><span class="k">Payments table:</span> <span class="v">Whop Transaction ID (text, unique), Client (linked), Product (single select), Amount (currency), Payment Month (text)</span></div>
+    <div class="field"><span class="k">Clients table:</span> <span class="v">First Name, Last Name, Email, Prospect Stage, Tags (multi-select), Current Product, Source, Last Payment Month</span></div>
+    <div class="note">Once Payments table has a Client link + Product field, you can compute "first Freedom payment?" with a rollup/formula instead of a Find step. That's the next-level simplification.</div>
+  </div>
+
+  <h2>Open questions before you build</h2>
+  <div class="step">
+    <div class="field">1. Is "Leads" the same Airtable table as "Clients" with a stage field, or two different tables? Affects A1 vs B1 wording.</div>
+    <div class="field">2. What field on the Whop trigger holds the unique transaction ID? (Used for idempotency in step 4.)</div>
+    <div class="field">3. Do you want one Slack channel for all Freedom events, or separate channels per outcome (new / upgrade / rebill)?</div>
+    <div class="field">4. Should rebills also send a "thanks for renewing" email, or stay silent like the current draft?</div>
+  </div>
+
+</div>
+
+</body>
+</html>
